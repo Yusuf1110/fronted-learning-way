@@ -130,3 +130,190 @@
     }, []);
 
 ### 你可以在 Effect 中返回一个函数，这个函数会在组件被卸载/渲染时执行
+
+### 若对一个state有大量逻辑操作，可以使用reducer管理 
+```js
+import { useReducer } from 'react';
+import AddTask from './AddTask.js';
+import TaskList from './TaskList.js';
+
+export default function TaskApp() {
+  const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);  //替换useState，第一个参数是reducer函数,第二个是初始值
+
+  // 每次调用此方法会派发一个action对象到tasksReducer中。tasksReducer执行一次。
+  function handleAddTask(text) {
+    dispatch({  //dispatch 方法中就是 action对象
+      type: 'added',
+      id: nextId++,
+      text: text,
+    });
+  }
+
+  function handleChangeTask(task) {
+    dispatch({
+      type: 'changed',
+      task: task,
+    });
+  }
+
+  function handleDeleteTask(taskId) {
+    dispatch({
+      type: 'deleted',
+      id: taskId,
+    });
+  }
+
+  return (
+    <>
+      <AddTask onAddTask={handleAddTask} />
+      <TaskList
+        tasks={tasks}
+        onChangeTask={handleChangeTask}
+        onDeleteTask={handleDeleteTask}
+      />
+    </>
+  );
+}
+
+// 这个可以抽出单文件
+function tasksReducer(tasks, action) { //第一个参数是state，第二个是派发的action对象
+  switch (action.type) {
+    case 'added': {
+      return [  //return 出去的就是setState更新内容
+        ...tasks,
+        {
+          id: action.id,
+          text: action.text,
+          done: false,
+        },
+      ];
+    }
+    case 'changed': {
+      return tasks.map((t) => {
+        if (t.id === action.task.id) {
+          return action.task;
+        } else {
+          return t;
+        }
+      });
+    }
+    case 'deleted': {
+      return tasks.filter((t) => t.id !== action.id);
+    }
+    default: {
+      throw Error('未知 action: ' + action.type);
+    }
+  }
+}
+
+let nextId = 3;
+const initialTasks = [
+  {id: 0, text: '参观卡夫卡博物馆', done: true},
+  {id: 1, text: '看木偶戏', done: false},
+  {id: 2, text: '打卡列侬墙', done: false}
+];
+
+```
+
+### 使用 Immer 简化 reducers
+```js
+import { useImmerReducer } from 'use-immer'; //使用Immer这个库
+
+function tasksReducer(draft, action) { 
+//和reducer的区别就是第一个参数，Immer 会基于当前 state 创建一个副本。我们不需要return，直接修改draft。就好像在修改state。
+  switch (action.type) {
+    case 'added': {
+      draft.push({ //直接修改draft，就会触发setState
+        id: action.id,
+        text: action.text,
+        done: false,
+      });
+      break;
+    }
+    case 'changed': {
+      const index = draft.findIndex((t) => t.id === action.task.id);
+      draft[index] = action.task;
+      break;
+    }
+    case 'deleted': {
+      return draft.filter((t) => t.id !== action.id);
+    }
+    default: {
+      throw Error('未知 action：' + action.type);
+    }
+  }
+}
+
+export default function TaskApp() {
+  const [tasks, dispatch] = useImmerReducer(tasksReducer, initialTasks);
+  ...
+
+```
+
+### 将props传入到深层组件
+```js
+// app.js
+import Father from './father.js';
+import Child from './child.js';
+import Other from './other.js';
+
+export default function ProfilePage() {
+  return (
+    <Father> //  设置 1
+      <Child>My Profile</Child>  // 收到 1
+      <Father >  // 收到 1 设置 2
+        <Child>My Profile</Child> // 收到 2
+        <Father> // 收到 2 设置 3
+            <Child>My Profile</Child>  // 收到 3
+        </Father>
+      </Father>
+      <Other> //未设置
+        <Other> // 未设置
+            <Child> //收到1
+            </Child>
+        </Other>
+      </Other>
+    </Father>
+  );
+}
+ 
+// LevelContext.js
+import { createContext } from 'react';
+
+export const LevelContext = createContext(0); // 创建一个context
+
+
+// father.js
+import { useContext } from 'react';
+import { LevelContext } from './LevelContext.js';
+
+export default function Father({ children, isFancy }) {
+  const level = useContext(LevelContext);
+  return (
+    <section>
+      <LevelContext.Provider value={level + 1}> // 在外部父组件使用LevelContext.Provider更新context的value
+        {children} // 子组件会拿到到最靠近他的一个context的value
+      </LevelContext.Provider>
+    </section>
+  );
+}
+
+// children.js
+import { useContext } from 'react';
+import { LevelContext } from './LevelContext.js';
+
+export default function Children({ children }) {
+  const level = useContext(LevelContext); // 使用useContext获取value，这个value是最近长辈组件中LevelContext.Provider设置的value，若没有设置就是初始
+  switch (level) {
+    case 0:
+      throw Error('Heading 必须在 Section 内部！');
+    case 1:
+      return <h1>{children}</h1>;
+    case 2:
+      return <h2>{children}</h2>;
+    default:
+      throw Error('未知的 level：' + level);
+  }
+}
+
+```
