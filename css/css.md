@@ -1,0 +1,3 @@
+### display 和 visibility 区别
+1...
+2在使用transtion的时候，visiblity可以动态，而display：none只会强制切换，并覆盖transtion其他作用（可以使用定时器开启一个异步，下一帧执行其他动画）

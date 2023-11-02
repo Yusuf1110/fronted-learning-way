@@ -22,3 +22,5 @@ something = 'seven';
 something = 7;
 ```
 ### 如果没有明确的指定类型，那么 TypeScript 会依照类型推论（Type Inference）的规则推断出一个类型。
+
+### 最简单的方法是使用「类型 + 方括号」来表示数组：let fibonacci: number[] = [1, 1, 2, 3, 5];
