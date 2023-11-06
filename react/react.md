@@ -139,7 +139,27 @@
     }, []);
 ```
 
-### 你可以在 Effect 中返回一个函数（return），这个函数会在组件被卸载/渲染时执行
+### 你可以在 Effect 中返回一个函数（return），这个函数会在组件被卸载时执行
+1. 将组件挂载到页面时，将运行 setup 代码。
+2. 重新渲染 依赖项 变更的组件后：
+- 首先，使用旧的 props 和 state 运行 cleanup 代码。
+- 然后，使用新的 props 和 state 运行 setup 代码。
+3. 当组件从页面卸载后，cleanup 代码 将运行最后一次。
+
+> 如果是开发环境react18会在组件挂载的时候setup-cleanup各执行一次，再正常执行setup
+
+```js
+useEffect(()=>{
+
+  console.log("setup",dep), // setup函数，组件挂载执行一次，每次dep改变执行一次（后执行），dep时新的
+
+  return ()=>{
+    console.log("clearup",dep) // clearup函数，组件销毁执行一次，每次dep改变执行一次（先执行），dep时旧的
+  }
+
+},[dep])   
+```
+
 
 ### 若对一个state有大量逻辑操作，可以使用reducer管理 
 ```js
