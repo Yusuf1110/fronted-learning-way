@@ -373,3 +373,26 @@ export default function Children({ children }) {
 
 比如父组件向子组件更新了一个state，子组件在用副作用监听且特殊处理（两次处理，state更新一次，effect里面再处理一次），如果有渲染开销，则可以避免闪烁之类的问题。[比较](https://zh-hans.react.dev/reference/react/useLayoutEffect#measuring-layout-before-the-browser-repaints-the-screen)
 
+### memo进行的优化
+> 使用 memo 将组件包装起来，以获得该组件的一个 记忆化版本。父组件更新时，如果该组件的props没有更新（用memo包裹的子组件），则子组件不更新。对于一个子组件在父组件中有更新性能开销时候，有使用memo的必要。比如文件列表，则子文件组件就需要被包裹、如果一个子组件更新时候渲染开销大，也需要被memo包裹。
+
+默认情况下，React 将使用 Object.is 比较每个 prop。注意，Object.is(3, 3) 为 true，但 Object.is({}, {}) 为 false。尤其是prop是一个function，其实父组件每次更新组件，都会重新生成新的变量。这时候就该使用**useCallback**进行对传入函数进行优化。使其父组件更新函数重新创建。
+
+```js
+function ProductPage({ productId, referrer, theme }) {
+  // 在多次渲染中缓存函数，如果没有useCallback，则这里更新就会生成新的函数
+  const handleSubmit = useCallback((orderDetails) => {
+    post('/product/' + productId + '/buy', {
+      referrer,
+      orderDetails,
+    });
+  }, [productId, referrer]); // 依赖项。因为是基本类型，依赖项改变时候要重新生成一个新的函数，不然就返回旧的
+
+  return (
+    <div className={theme}>
+      {/* ShippingForm内部用memo包裹 收到同样的 props 并且跳过重新渲染 */}
+      <ShippingForm onSubmit={handleSubmit} />
+    </div>
+  );
+}
+```

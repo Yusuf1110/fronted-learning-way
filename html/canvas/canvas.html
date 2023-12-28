@@ -1,0 +1,43 @@
+<html>
+  <head>
+    <title>Canvas</title>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      #canvas {
+        border: 1px solid black;
+      }
+      #canvas-container {
+        position: relative;
+        width: 1080px;
+        height: 720px;
+      }
+      #type-select {
+        width: 200px;
+        position: absolute;
+        right: 10px;
+        top: 10px;
+      }
+    </style>
+    <script type="application/javascript" src="./canvas.js" defer></script>
+    <script type="application/javascript" src="./action.js" defer></script>
+  </head>
+  <body onload="init();">
+    <div id="canvas-container">
+      <canvas id="canvas" width="1080" height="720"></canvas>
+      <select
+        name="drawing-type"
+        id="type-select"
+        onchange="typeChange(event);"
+        size="4"
+      >
+        <option value="">--Please choose an type--</option>
+        <option value="straightLine">直线</option>
+        <option value="line">线</option>
+        <option value="rectangle">方框</option>
+      </select>
+    </div>
+  </body>
+</html>
