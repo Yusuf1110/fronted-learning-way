@@ -7,18 +7,24 @@
         font-family: Arial, sans-serif;
       }
       #canvas {
-        border: 1px solid black;
+        /* border: 1px solid black; */
       }
       #canvas-container {
         position: relative;
+        overflow: hidden;
         width: 1080px;
         height: 720px;
       }
       #type-select {
         width: 200px;
         position: absolute;
-        right: 10px;
+        right: 30px;
         top: 10px;
+      }
+      #btn-clear {
+        position: absolute;
+        right: 30px;
+        top: 100px;
       }
     </style>
     <script type="application/javascript" src="./canvas.js" defer></script>
@@ -33,11 +39,14 @@
         onchange="typeChange(event);"
         size="4"
       >
-        <option value="">--Please choose an type--</option>
+        <option value="base">--Please choose an type--</option>
         <option value="straightLine">直线</option>
         <option value="line">线</option>
         <option value="rectangle">方框</option>
       </select>
+      <button class="btn" id="btn-clear" onclick="clearCanvas();">
+        擦除画布
+      </button>
     </div>
   </body>
 </html>
