@@ -1,4 +1,5 @@
 const canvas = document.getElementById("canvas");
+const canvasContainer = document.getElementById("canvas-container");
 let ctx = null;
 function init() {
   // 兼容性测试
@@ -43,7 +44,8 @@ function undoCanvas() {
  * 清空画布
  */
 function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.putImageData(canvasHistory[0], 0, 0);
+  canvasHistory = [];
   saveCanvas();
 }
 
@@ -57,4 +59,24 @@ function loadImage(url) {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     saveCanvas();
   };
+}
+
+/**
+ *
+ */
+function getBoundingRect() {
+  const canvasRect = canvas.getBoundingClientRect();
+  const containerRect = canvasContainer.getBoundingClientRect();
+  return {
+    left: canvasRect.left - containerRect.left,
+    top: canvasRect.top - containerRect.top,
+    right: canvasRect.right - containerRect.right,
+    bottom: canvasRect.bottom - containerRect.bottom,
+  };
+  // console.log({
+  //   left: canvasRect.left - containerRect.left,
+  //   top: canvasRect.top - containerRect.top,
+  //   right: canvasRect.right - containerRect.right,
+  //   bottom: canvasRect.bottom - containerRect.bottom,
+  // });
 }

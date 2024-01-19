@@ -5,10 +5,10 @@ var brush = {
     x: 0,
     y: 0,
     scale: 1,
-    origin: {
-      x: 0,
-      y: 0,
-    },
+    // origin: {
+    //   x: 0,
+    //   y: 0,
+    // },
   },
   x: 0,
   y: 0,
@@ -29,16 +29,35 @@ var brush = {
     ctx.fillStyle = this.color;
     ctx.fill();
   },
-  drawText: function (x, y) {
+  drawCicle: function (radius) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, radius, 0, 2 * Math.PI, true);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  },
+  drawText: function (text, x, y) {
     ctx.beginPath();
     ctx.font = "16px Arial";
     ctx.fillStyle = this.color;
-    ctx.fillText(brush.drawType, this.x, this.y);
+    ctx.fillText(text, x, y);
   },
   transform: function (e) {
-    var { x, y, scale } = this.baseOffset;
-    canvas.style.transformOrigin = `${brush.baseOffset.origin.x}px ${brush.baseOffset.origin.y}px`;
-    canvas.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    const baseOffset = this.baseOffset;
+    baseOffset.scale = Math.min(Math.max(baseOffset.scale, 1), 10);
+    let w = ((baseOffset.scale - 1) * canvas.width) / 2;
+    let h = ((baseOffset.scale - 1) * canvas.height) / 2;
+    if (baseOffset.x > w) {
+      baseOffset.x = w;
+    } else if (baseOffset.x < -w) {
+      baseOffset.x = -w;
+    }
+    if (baseOffset.y > h) {
+      baseOffset.y = h;
+    } else if (baseOffset.y < -h) {
+      baseOffset.y = -h;
+    }
+    // canvas.style.transformOrigin = `${brush.baseOffset.origin.x}px ${brush.baseOffset.origin.y}px`;
+    canvas.style.transform = `translate(${baseOffset.x}px, ${baseOffset.y}px) scale(${baseOffset.scale})`;
   },
 };
 
@@ -50,6 +69,15 @@ function typeChange(e) {
 }
 
 /**
+ * 测距
+ */
+function getDistance(points1, points2) {
+  return Math.sqrt(
+    Math.pow(points1.x - points2.x, 2) + Math.pow(points1.y - points2.y, 2)
+  );
+}
+
+/**
  * actions
  */
 const actions = {
@@ -57,8 +85,6 @@ const actions = {
     mousedown(e) {
       brush.x = e.offsetX;
       brush.y = e.offsetY;
-      brush.baseOffset.origin.x = 0;
-      brush.baseOffset.origin.y = 0;
       brush.isDrawing = true;
     },
     mouseup(e) {
@@ -68,24 +94,17 @@ const actions = {
       if (!brush.isDrawing) {
         return;
       }
-      let baseOffset = brush.baseOffset;
-      let w = canvas.width - baseOffset.scale * canvas.width;
-      let h = canvas.height - baseOffset.scale * canvas.height;
-      brush.baseOffset.x += e.offsetX - brush.x;
-      brush.baseOffset.y += e.offsetY - brush.y;
-      brush.baseOffset.x = Math.min(Math.max(brush.baseOffset.x, w), 0);
-      brush.baseOffset.y = Math.min(Math.max(brush.baseOffset.y, h), 0);
+      const baseOffset = brush.baseOffset;
+      baseOffset.x += e.offsetX - brush.x;
+      baseOffset.y += e.offsetY - brush.y;
+
       brush.transform();
     },
     mouseleave(e) {
       brush.isDrawing = false;
     },
     wheel(e) {
-      console.log(e);
-      let scale = brush.baseOffset.scale + (e.deltaY > 0 ? 0.1 : -0.1);
-      brush.baseOffset.scale = Math.min(Math.max(scale, 1), 10);
-      brush.baseOffset.origin.x = "center";
-      brush.baseOffset.origin.y = "center";
+      brush.baseOffset.scale += e.deltaY < 0 ? 0.1 : -0.1;
       brush.transform();
     },
   },
@@ -109,6 +128,10 @@ const actions = {
       brush.y = e.offsetY;
     },
     mouseleave(e) {},
+    wheel(e) {
+      brush.baseOffset.scale += e.deltaY < 0 ? 0.1 : -0.1;
+      brush.transform();
+    },
   },
 
   // 直线
@@ -130,6 +153,10 @@ const actions = {
       brush.drawLine(e.offsetX, e.offsetY);
     },
     mouseleave(e) {},
+    wheel(e) {
+      brush.baseOffset.scale += e.deltaY < 0 ? 0.1 : -0.1;
+      brush.transform();
+    },
   },
 
   // 矩形
@@ -151,6 +178,69 @@ const actions = {
       brush.drawRect(e.offsetX - brush.x, e.offsetY - brush.y);
     },
     mouseleave(e) {},
+    wheel(e) {
+      brush.baseOffset.scale += e.deltaY < 0 ? 0.1 : -0.1;
+      brush.transform();
+    },
+  },
+
+  // 绘制圆
+  cicle: {
+    mousedown(e) {
+      brush.x = e.offsetX;
+      brush.y = e.offsetY;
+      brush.isDrawing = true;
+    },
+    mouseup(e) {
+      brush.isDrawing = false;
+      saveCanvas();
+    },
+    mousemove(e) {
+      if (!brush.isDrawing) {
+        return;
+      }
+      redrawCanvas();
+      const redius = getDistance(
+        { x: brush.x, y: brush.y },
+        { x: e.offsetX, y: e.offsetY }
+      );
+      brush.drawCicle(redius);
+    },
+    mouseleave(e) {},
+    wheel(e) {
+      brush.baseOffset.scale += e.deltaY < 0 ? 0.1 : -0.1;
+      brush.transform();
+    },
+  },
+
+  // 测距
+  measure: {
+    mousedown(e) {
+      brush.x = e.offsetX;
+      brush.y = e.offsetY;
+      brush.isDrawing = true;
+    },
+    mouseup(e) {
+      brush.isDrawing = false;
+      saveCanvas();
+    },
+    mousemove(e) {
+      if (!brush.isDrawing) {
+        return;
+      }
+      redrawCanvas();
+      const res = getDistance(
+        { x: brush.x, y: brush.y },
+        { x: e.offsetX, y: e.offsetY }
+      );
+      brush.drawText(res, e.offsetX, e.offsetY);
+      brush.drawLine(e.offsetX, e.offsetY);
+    },
+    mouseleave(e) {},
+    wheel(e) {
+      brush.baseOffset.scale += e.deltaY < 0 ? 0.1 : -0.1;
+      brush.transform();
+    },
   },
 };
 
